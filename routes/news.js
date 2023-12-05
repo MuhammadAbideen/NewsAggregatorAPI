@@ -56,24 +56,98 @@ router.get("/", async (req, res) => {
         res.status(500).json({ message: 'Server error' });
       }
 });
-  
 
+
+const fetchArticleFromAPI = async (id) => {
+  try {
+    // Replace 'YOUR_NEWS_API_KEY' with the actual API key from your environment variables
+
+    
+    const apiKey = process.env.YOUR_NEWS_API_KEY; // Replace with your news API key
+    const baseUrl = 'https://newsapi.org/v2';
+
+    // Construct the URL to fetch articles from a specific news source
+    const apiUrl = `${baseUrl}/everything?sources=${id}&apiKey=${apiKey}`;
+
+    // Make a GET request to fetch articles from the specified news source
+    const response = await axios.get(apiUrl);
+
+    // Assuming the API response contains the article data
+    const article = response.data;
+
+    return article;
+  } catch (error) {
+    // Handle any errors (e.g., network issues, API errors)
+    console.error('Error fetching article:', error.message);
+    throw new Error('Failed to fetch article');
+  }
+};
+
+
+  
+// In-memory cache initialization
+const newsCache = new Map();
+
+// Routes setup
 router.post("/:id/read", async (req, res) => {
-    const id = req.params.id;
+    try {
+        const { id } = req.params;
+        // Get article from cache or external API if not cached
+        let article = newsCache.get(id);
+        if (!article) {
+          // Fetch article from external API (assuming fetchArticleFromAPI is implemented)
+          article = await fetchArticleFromAPI(id);
+          // Cache the article
+          newsCache.set(id, article);
+        }
+        // Mark as read (set a property in the article object)
+        article.read = true;
+        res.status(200).json({ message: 'Article marked as read', article });
+      } catch (error) {
+        res.status(500).json({ message: 'Server error' });
+      }
 
 });
 
 router.post("/:id/favorite", async (req, res) => {
-    const id = req.params.id;
+    try {
+        const { id } = req.params;
+        // Get article from cache or external API if not cached
+        let article = newsCache.get(id);
+        if (!article) {
+          // Fetch article from external API (assuming fetchArticleFromAPI is implemented)
+          article = await fetchArticleFromAPI(id);
+          // Cache the article
+          newsCache.set(id, article);
+        }
+        // Mark as favorite (set a property in the article object)
+        article.favorite = true;
+        res.status(200).json({ message: 'Article marked as favorite', article });
+      } catch (error) {
+        res.status(500).json({ message: 'Server error' });
+      }
 
 });
 
 router.get("/read", async (req, res) => {
-
+    try {
+        // Filter articles in cache for 'read' property
+        const readArticles = Array.from(newsCache.values()).filter(article => article.read);
+        res.status(200).json({ readArticles });
+      } catch (error) {
+        res.status(500).json({ message: 'Server error' });
+      }
 });
 
 router.get("/favorites", async (req, res) => {
-
+    try 
+    {
+        // Filter articles in cache for 'favorite' property
+        const favoriteArticles = Array.from(newsCache.values()).filter(article => article.favorite);
+        res.status(200).json({ favoriteArticles });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error' });
+    }
 });
 
 
